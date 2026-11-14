@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en-CA"><body style="margin:0;padding:0;background:#ffffff;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+<tr><td align="center" style="padding:12px;">
+<table role="presentation" width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#1b1f24;font-size:14px;line-height:1.45;">
+
+<tr><td style="border-bottom:3px solid #0b3d5c;padding-bottom:8px;">
+  <div style="font-size:20px;font-weight:700;">Marine Weather Briefing</div>
+  <div style="font-size:12px;color:#5f6b76;">Eastern Ontario Ferry Services — {{ generated.strftime('%A %d %B %Y') }}, issued {{ generated.strftime('%H:%M') }} {{ generated.tzname() or '' }}</div>
+  <div style="font-size:12px;color:#5f6b76;margin-top:6px;">For awareness. Colours compare forecast data with MES reference thresholds to draw attention to conditions worth watching. They do not direct operations; the Master makes the final decision.</div>
+</td></tr>
+
+{% if d.alerts %}
+<tr><td style="padding-top:10px;">
+  <div style="border:1px solid #c62828;border-left:6px solid #c62828;background:#fdf3f3;padding:8px 10px;">
+    <div style="font-weight:700;color:#c62828;">Environment Canada alerts in effect</div>
+    {% for a in d.alerts %}<div>{{ a.event|title }} — {{ a.areas|join('; ') }}{% if a.expires %} (expires {{ fmt_dt(a.expires) }}){% endif %}</div>{% endfor %}
+  </div>
+</td></tr>
+{% else %}
+<tr><td style="padding-top:10px;font-size:12px;color:#5f6b76;">No Environment Canada public or marine alerts in effect for the service areas at time of issue.</td></tr>
+{% endif %}
+
+<tr><td style="padding-top:12px;">
+  <div style="font-size:16px;font-weight:600;">{{ n.headline }}</div>
+  <p style="margin:6px 0 10px;">{{ n.summary }}</p>
+</td></tr>
+
+<tr><td>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="2" style="font-size:12px;">
+    <tr><td style="color:#5f6b76;font-weight:600;padding:4px;">Service</td>
+      {% for day in d.days %}<td align="center" style="color:#5f6b76;font-weight:600;padding:4px;">{{ fmt_day(day) }}</td>{% endfor %}</tr>
+    {% for sid, s in d.services.items() %}
+    <tr><td style="padding:4px;"><b>{{ s.short or s.name }}</b></td>
+      {% for day in d.days %}
+        {% set lv = s.daily[day].overall if s.daily and day in s.daily else -1 %}
+        {% set pk = s.peak_wind[day] if s.peak_wind and day in s.peak_wind else None %}
+        <td align="center" bgcolor="{{ colours[lv] }}" style="background:{{ colours[lv] }};color:{{ '#1b1f24' if lv in (1, -1) else '#ffffff' }};padding:5px 2px;font-weight:600;">
+          {{ level_name[lv]|upper if lv >= 0 else 'N/A' }}{% if pk %}<br><span style="font-weight:400;font-size:11px;">{{ pk.dir }} {{ '%.0f'|format(pk.wind) }}{% if pk.gust is not none %}G{{ '%.0f'|format(pk.gust) }}{% endif %}</span>{% endif %}
+        </td>
+      {% endfor %}</tr>
+    {% endfor %}
+  </table>
+  <div style="font-size:11px;color:#5f6b76;margin-top:4px;">Green: forecast below MES reference thresholds. Yellow: approaching a reference threshold, or a hazard to note. Red: at or above a reference threshold; flagged for attention. Peak consensus wind shown as direction, sustained and gust in knots.</div>
+</td></tr>
+
+{% if key_times %}
+<tr><td style="padding-top:12px;">
+  <div style="font-weight:600;">Key times</div>
+  {% for e in key_times %}
+  <div style="margin:3px 0;"><span style="display:inline-block;min-width:78px;">{{ fmt_t(e.first_peak) }}</span>
+    <span style="background:{{ colours[e.level] }};color:{{ '#1b1f24' if e.level == 1 else '#ffffff' }};padding:0 6px;font-size:11px;font-weight:700;">{{ e.level_name|upper }}</span>
+    {{ e.service }} — {{ e.label }}: {{ e.why }}</div>
+  {% endfor %}
+</td></tr>
+{% endif %}
+
+<tr><td style="padding-top:12px;">
+  <div style="font-weight:600;">Synoptic situation</div>
+  <p style="margin:4px 0 10px;">{{ n.synopsis }}</p>
+</td></tr>
+
+<tr><td style="padding-top:4px;font-size:13px;">
+  The full briefing, with five-day meteograms for each service, charts{% if d.images.radar_local %}, radar{% endif %}{% if d.images.ice %}, ice{% endif %} and the Environment Canada cross-check, is attached as a PDF.
+</td></tr>
+
+<tr><td style="padding-top:14px;font-size:11px;color:#5f6b76;border-top:1px solid #d9dee3;">
+  Reference thresholds are planning values drawn from vessel experience and engineering studies; they are not operating limits, and a colour is not a decision. The Master makes the final decision on every crossing, using conditions observed on scene. Official warnings are those issued by Environment and Climate Change Canada. Data: ECCC HRDPS, RDPS, GDPS; NOAA GFS; MET Norway (ECMWF-based).
+</td></tr>
+
+</table></td></tr></table>
+</body></html>

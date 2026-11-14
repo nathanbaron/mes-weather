@@ -1,0 +1,215 @@
+# Marine Weather Briefing — service configuration
+#
+# `note` and `risk` are internal reference only; the brief does not print them.
+# Wind reference thresholds mirror the Notion "Operational Weather Thresholds" database
+# (MES Command Centre, data source collection://c81d64e1-dbf4-4ea7-8e8a-31b84274fae2).
+# When a threshold changes there, change it here in the same commit.
+#
+# Sectors are compass bearings the wind blows FROM, inclusive, clockwise from
+# `from` to `to`. Where the Notion row says "dead west" or "hard east", the
+# sector below is +/- 22.5 degrees (one compass point either side). That is an
+# interpretation and is marked `interpreted: true` until MES confirms it.
+#
+# Coordinates are route midpoints, approximate to ~1 km, which is finer than
+# any of the models resolve. Marked `verify: true` where not confirmed.
+
+timezone: America/Toronto
+forecast_days: 5
+
+# Colour logic. Colours flag forecast data for attention; they are not operating limits
+# and do not direct operations. Masters make the final decision.
+status_rules:
+  # Sustained wind within this many knots under a threshold, in sector -> YELLOW
+  yellow_margin_kt: 5
+  # Gusts at or over threshold in sector (sustained under) -> YELLOW
+  gusts_to_yellow: true
+  # Any single model at or over threshold in sector while consensus is under -> YELLOW
+  model_outlier_to_yellow: true
+  # Wind at or over threshold within this many degrees outside the sector -> YELLOW
+  near_sector_deg: 20
+  # Consensus statistic across models for the plotted line and the status
+  consensus: median
+
+hazards:
+  visibility_nm:          # marine convention, nautical miles
+    yellow_below: 2.0
+    red_below: 0.5
+  freezing_spray:         # Overland (1990) icing predictor; see references/status-criteria.md
+    yellow_class: light
+    red_class: moderate   # matches the EC freezing spray warning criterion
+  wind_chill_c:
+    yellow_at_or_below: -20
+    red_at_or_below: -30
+  humidex:
+    yellow_at_or_above: 35
+    red_at_or_above: 40
+  snowfall_cm:
+    yellow_12h: 5
+    red_24h: 15
+  freezing_precip:
+    yellow_any: true
+    red_hours: 2          # consecutive hours of freezing rain/drizzle in consensus
+  thunderstorm:
+    cape_jkg_yellow: 1000 # with measurable precipitation in the same hour
+
+# Water temperature for the freezing-spray predictor comes from the GDPS lake
+# surface analysis. If that is unavailable, these monthly eastern-Lake-Ontario
+# estimates are used and the brief says so.
+water_temp_fallback_c: {1: 2, 2: 1, 3: 1, 4: 3, 5: 8, 6: 15, 7: 21, 8: 22, 9: 19, 10: 13, 11: 8, 12: 4}
+
+# Ice season — the ice section appears between these dates (MM-DD), or any
+# time the CIS returns a chart.
+ice_season: {start: "12-01", end: "04-30"}
+
+services:
+  - id: wolfe
+    name: Wolfe Island Ferry Service
+    short: Wolfe Island
+    vessels: [WOLFE ISLANDER III, WOLFE ISLANDER IV]
+    terminals: [Kingston, Marysville, Dawson Point]
+    lat: 44.215
+    lon: -76.462
+    verify: true
+    ec_city: 44.231_-76.486   # Kingston
+    open_water: true
+    rules:
+      - label: Wolfe Island Ferry — SW to NW
+        threshold_kt: 30
+        sector: {from: 210, to: 315}
+        risk: Thrust/Power
+        note: Long western fetch; sea state builds quickly across the lake.
+      - label: Kingston Terminal — hard west
+        threshold_kt: 30
+        sector: {from: 248, to: 292}
+        interpreted: true
+        risk: Thrust/Power
+        note: Higher thrust needed to hold alongside; a power-management factor.
+      - label: WOLFE ISLANDER IV — Kingston secondary ramp, SW quadrant
+        threshold_kt: 20
+        sector: {from: 180, to: 270}
+        vessel: WOLFE ISLANDER IV
+        risk: Docking
+        note: Kongsberg desktop manoeuvring study (May 2026) assessed berthing at the Kingston secondary ramp in sustained SW winds to roughly 20 kt, with little margin.
+        source: Notion — Wolfe Islander IV Berthing Limits and Mitigation Options
+
+  - id: amherst
+    name: Amherst Island Ferry Service
+    short: Amherst Island
+    vessels: [AMHERST ISLANDER II, FRONTENAC II]
+    terminals: [Millhaven, Stella]
+    lat: 44.180
+    lon: -76.740
+    verify: true
+    ec_city: 44.231_-76.486
+    open_water: true
+    rules:
+      - label: Amherst Island — dead west
+        threshold_kt: 30
+        sector: {from: 248, to: 292}
+        interpreted: true
+        risk: Speed/Schedule
+        note: Crosswind is manageable (the vessel can crab). Head winds affect speed and schedule; following seas affect docking. Sea-state dependent.
+      - label: Amherst Island — dead east
+        threshold_kt: 30
+        sector: {from: 68, to: 112}
+        interpreted: true
+        risk: Speed/Schedule
+        note: As above, opposite heading.
+
+  - id: glenora
+    name: Glenora Ferry Service
+    short: Glenora
+    vessels: [GLENORA, QUINTE LOYALIST]
+    terminals: [Glenora, Adolphustown]
+    lat: 44.048
+    lon: -77.035
+    verify: true
+    ec_city: 44.006_-77.140   # Picton
+    open_water: false
+    rules:
+      - label: Glenora — east quadrant
+        threshold_kt: 20
+        sector: {from: 45, to: 135}
+        risk: Channel Cross-Current
+        note: Narrows geometry. East wind sets up a cross-current in the channel on top of wind load.
+        trust_local: true     # Notion: land station, channel geometry overrides grid
+
+  - id: howe
+    name: Howe Island Ferry Service
+    short: Howe Island
+    vessels: [FRONTENAC HOWE ISLANDER]
+    terminals: [Howe Island mainland dock, Howe Island dock]
+    lat: 44.285
+    lon: -76.280
+    verify: true
+    ec_city: 44.231_-76.486
+    open_water: false
+    rules:
+      - label: Howe Island — hard east (cable tension)
+        threshold_kt: 25
+        sector: {from: 68, to: 112}
+        interpreted: true
+        risk: Mooring Tension
+        note: East wind pushes the vessel west, increasing cable tension.
+      - label: Howe Island — hard west (cable tension)
+        threshold_kt: 30
+        sector: {from: 248, to: 292}
+        interpreted: true
+        risk: Mooring Tension
+        note: West wind increases cable tension.
+
+  - id: simcoe
+    name: Simcoe Island Ferry Service
+    short: Simcoe Island
+    vessels: [SIMCOE ISLANDER]
+    terminals: [Wolfe Island, Simcoe Island]
+    lat: 44.195
+    lon: -76.525
+    verify: true
+    ec_city: 44.231_-76.486
+    open_water: false
+    rules: []                 # No reference thresholds in Notion yet. Data is shown; wind is not colour-assessed.
+
+# Every request the generator makes. check_sources.py walks this list.
+sources:
+  # Forecast models, fetched directly from the issuing agencies (no API key needed).
+  models: [hrdps, rdps, gdps, gfs, ecmwf_metno]
+  geomet_wms: https://geo.weather.gc.ca/geomet          # ECCC: HRDPS, RDPS, GDPS via WCS
+  nomads_gfs: https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl
+  metno: https://api.met.no/weatherapi/locationforecast/2.0/complete
+  water_temp_layer: GDPS_15km_SeaWaterTemp             # lake surface temperature (K), freezing-spray input
+  ec_alerts_cap:            # Ontario Storm Prediction Centre CAP feed (public and marine)
+    - https://dd.weather.gc.ca/{yyyymmdd}/WXO-DD/alerts/cap/{yyyymmdd}/CWTO/   # dated archive: works for today and yesterday
+    - https://dd.weather.gc.ca/today/alerts/cap/{yyyymmdd}/CWTO/
+  ec_city_rss: https://weather.gc.ca/rss/weather/{code}_e.xml   # code = lat_lon
+  ec_marine_areas:          # EC marine forecasts for the cross-check
+    - name: Eastern Lake Ontario
+      url: https://weather.gc.ca/marine/forecast_e.html?mapID=11&siteID=08203
+    - name: Kingston to Cornwall
+      url: https://weather.gc.ca/marine/forecast_e.html?mapID=11&siteID=07200
+  radar_wms: https://geo.weather.gc.ca/geomet
+  radar_layers: {rain: RADAR_1KM_RRAI, snow: RADAR_1KM_RSNO}
+  radar_us_wms: https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows
+  radar_us_layer: conus_bref_qcd
+  synoptic_charts:
+    analysis: https://www.wpc.ncep.noaa.gov/sfc/namussfcwbg.gif
+    day1: https://www.wpc.ncep.noaa.gov/basicwx/92fwbg.gif
+    day2: https://www.wpc.ncep.noaa.gov/basicwx/96fwbg.gif
+  ice:
+    cis_latest_page: https://ice-glaces.ec.gc.ca/cgi-bin/getprod.pl?prodid=CMMBCTCA&lang=en
+    cis_landing: https://www.canada.ca/en/environment-climate-change/services/ice-forecasts-observations/latest-conditions.html
+
+# Map extents for radar panels (lon_min, lat_min, lon_max, lat_max)
+radar_extents:
+  local:    [-77.4, 43.8, -75.9, 44.5]
+  approach: [-84.0, 40.5, -72.0, 47.0]
+
+distribution:
+  build_at: "05:00"
+  deliver_by: "06:00"
+  method: email
+  provider: agentmail          # API key in the AGENTMAIL_API_KEY environment variable
+  from_inbox: mes-weather-briefing@agentmail.to
+  recipients:
+    - nathan.baron@ontario.ca
+    - elysiavirelle@agentmail.to

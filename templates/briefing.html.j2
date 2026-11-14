@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marine Weather Briefing — {{ generated.strftime('%Y-%m-%d') }}</title>
+<style>
+  :root { --ink:#1b1f24; --muted:#5f6b76; --rule:#d9dee3; --bg:#ffffff; --panel:#f5f7f9;
+          --green:#2e7d32; --yellow:#e0a800; --red:#c62828; --na:#c9ced3; --accent:#0b3d5c; }
+  @page { size: Letter; margin: 13mm 12mm 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 10.5pt/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 19pt; margin: 0; letter-spacing: .2px; }
+  h2 { font-size: 13pt; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); color: var(--accent); }
+  h3 { font-size: 11.5pt; margin: 18px 0 6px; }
+  p { margin: 6px 0 10px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.5pt; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-bottom: 12px; }
+  .meta { display:flex; flex-wrap:wrap; gap: 4px 22px; margin-top: 6px; font-size: 9pt; color: var(--muted); }
+  .sample { background:#5b1d1d; color:#fff; padding:6px 10px; font-weight:700; margin-bottom:10px; }
+  .alerts { border: 1.5px solid var(--red); border-left-width: 6px; background: #fdf3f3; padding: 8px 12px; margin: 10px 0; }
+  .alerts h3 { margin: 0 0 4px; color: var(--red); font-size: 10.5pt; }
+  .alerts ul { margin: 0; padding-left: 18px; }
+  .noalerts { border-left: 6px solid var(--na); background: var(--panel); padding: 6px 12px; font-size: 9.5pt; margin: 10px 0; }
+  .headline { font-size: 12.5pt; font-weight: 600; margin: 4px 0 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+  th, td { padding: 4px 6px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .3px; }
+  .grid td.cell { text-align:center; color:#fff; font-weight:600; border: 2px solid #fff; white-space: nowrap; }
+  .grid td.cell span { display:block; font-weight:400; font-size:8pt; opacity:.95; }
+  .l-1 { background: var(--na); color: var(--ink) !important; }
+  .l0 { background: var(--green); } .l1 { background: var(--yellow); color: var(--ink) !important; } .l2 { background: var(--red); }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:5px; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:8.5pt; color:var(--muted); margin:6px 0 2px; }
+  .badge { display:inline-block; padding: 1px 8px; border-radius: 3px; font-size: 8.5pt; font-weight: 700; color:#fff; vertical-align: 2px; margin-left: 6px; }
+  figure { margin: 8px 0 12px; }
+  figure img { width: 100%; height: auto; border: 1px solid var(--rule); }
+  figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 3px; }
+  .two { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .service { break-inside: avoid-page; page-break-inside: avoid; }
+  .pb { break-before: page; page-break-before: always; }
+  .disclaimer { margin-top: 26px; padding: 8px 12px; background: var(--panel); font-size: 8.5pt; color: var(--muted); }
+  @media (max-width: 680px) { .two { grid-template-columns: 1fr; } .grid { font-size: 8pt; } .tablewrap { overflow-x:auto; } }
+</style>
+</head>
+<body>
+<main>
+{% if d.sample %}<div class="sample">SAMPLE DATA — synthetic test output. Not a forecast. Do not distribute.</div>{% endif %}
+
+<header>
+  <h1>Marine Weather Briefing — Eastern Ontario Ferry Services</h1>
+  <div class="meta">
+    <span><strong>{{ generated.strftime('%A %d %B %Y') }}</strong></span>
+    <span>Issued {{ generated.strftime('%H:%M') }} {{ generated.tzname() or '' }}</span>
+    <span>Period: {{ fmt_day(d.days[0]) if d.days else '' }} to {{ fmt_day(d.days[-1]) if d.days else '' }}</span>
+    <span>Units: knots, °C, mb, nautical miles (visibility)</span>
+  </div>
+  <p class="small muted" style="margin:8px 0 0">For awareness. Colours compare forecast data with MES reference thresholds to draw attention to conditions worth watching. They do not direct operations; the Master makes the final decision.</p>
+</header>
+
+{% if d.alerts %}
+<section class="alerts">
+  <h3>Environment Canada alerts in effect</h3>
+  <ul>
+  {% for a in d.alerts %}
+    <li><strong>{{ a.event|title }}</strong> — {{ a.areas|join('; ') }}.
+      {% if a.expires %}<span class="muted">Expires {{ fmt_dt(a.expires) }}.</span>{% endif %}
+      <span class="muted">Affects: {{ a.services|map('upper')|join(', ') }}</span></li>
+  {% endfor %}
+  </ul>
+</section>
+{% else %}
+<div class="noalerts">No Environment Canada public or marine alerts in effect for the service areas at time of issue{% if not ec_alerts_ok %} <strong>(EC alert feed could not be reached — confirm at weather.gc.ca)</strong>{% endif %}.</div>
+{% endif %}
+
+<h2>Summary</h2>
+<p class="headline">{{ n.headline }}</p>
+<p>{{ n.summary }}</p>
+
+<div class="tablewrap">
+<table class="grid">
+  <thead><tr><th>Service</th>{% for day in d.days %}<th style="text-align:center">{{ fmt_day(day) }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for sid, s in d.services.items() %}
+    <tr>
+      <td><strong>{{ s.short or s.name }}</strong><br><span class="muted small">{{ (s.vessels or [])|join(', ') }}</span></td>
+      {% for day in d.days %}
+        {% set lv = s.daily[day].overall if s.daily and day in s.daily else -1 %}
+        {% set pk = s.peak_wind[day] if s.peak_wind and day in s.peak_wind else None %}
+        <td class="cell l{{ lv }}">{{ level_name[lv]|upper if lv >= 0 else 'N/A' }}
+          {% if pk %}<span>{{ pk.dir }} {{ '%.0f'|format(pk.wind) }}{% if pk.gust is not none and pk.gust == pk.gust %}G{{ '%.0f'|format(pk.gust) }}{% endif %}</span>{% endif %}</td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="legend">
+  <span><i class="dot" style="background:var(--green)"></i>Green — forecast below MES reference thresholds</span>
+  <span><i class="dot" style="background:var(--yellow)"></i>Yellow — forecast approaching a reference threshold, or a hazard to note</span>
+  <span><i class="dot" style="background:var(--red)"></i>Red — forecast at or above a reference threshold; flagged for attention</span>
+  <span><i class="dot" style="background:var(--na)"></i>N/A — no reference thresholds defined</span>
+</div>
+<p class="small muted">Cells show the worst status in the day and the peak consensus wind (direction, sustained, gust, kt). Colours compare forecast data with MES reference thresholds, not the EC warning system. They draw attention to data; they are not go/no-go criteria.</p>
+
+{% if key_times %}
+<h3>Key times</h3>
+<table>
+  <thead><tr><th>From</th><th>Service</th><th>Item</th><th>Status</th><th>Detail</th></tr></thead>
+  <tbody>
+  {% for e in key_times %}
+    <tr><td style="white-space:nowrap">{{ fmt_t(e.first_peak) }}</td><td>{{ e.service }}</td><td>{{ e.label }}</td>
+        <td><span class="badge l{{ e.level }}">{{ e.level_name|upper }}</span></td>
+        <td>{{ e.why }} — until about {{ fmt_t(e.end) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h2>Synoptic situation</h2>
+<p>{{ n.synopsis }}</p>
+{% if d.images.synoptic_analysis or d.images.synoptic_day1 %}
+<div class="two">
+  {% if d.images.synoptic_analysis %}<figure><img src="{{ img(d.images.synoptic_analysis) }}" alt="Surface analysis"><figcaption>Current surface analysis (NOAA WPC).</figcaption></figure>{% endif %}
+  {% if d.images.synoptic_day1 %}<figure><img src="{{ img(d.images.synoptic_day1) }}" alt="Forecast surface chart"><figcaption>Forecast surface chart (NOAA WPC).</figcaption></figure>{% endif %}
+</div>
+{% endif %}
+
+{% if d.images.radar_local or d.images.radar_approach %}
+<h2>Radar</h2>
+{% if n.radar %}<p>{{ n.radar }}</p>{% endif %}
+{% if d.images.radar_approach %}<figure><img src="{{ img(d.images.radar_approach) }}" alt="Regional radar"><figcaption>Regional composite showing approaching precipitation. Canadian composite (MSC); US reflectivity (NOAA MRMS) underlaid where available.</figcaption></figure>{% endif %}
+{% if d.images.radar_local %}<figure><img src="{{ img(d.images.radar_local) }}" alt="Local radar"><figcaption>Local area. Squares mark the five services.</figcaption></figure>{% endif %}
+{% endif %}
+
+{% if d.ice_season or d.spray_expected %}
+<h2>Ice and freezing spray</h2>
+{% if n.ice %}<p>{{ n.ice }}</p>{% endif %}
+{% if d.images.ice %}<figure><img src="{{ img(d.images.ice) }}" alt="Ice chart"><figcaption>Canadian Ice Service — latest Great Lakes chart. <a href="{{ d.ice_url }}">Source</a>.</figcaption></figure>
+{% elif d.ice_season %}<p class="muted small">CIS ice chart not retrieved on this run. Latest products: canada.ca — Ice forecasts and observations.</p>{% endif %}
+<table>
+  <thead><tr><th>Service</th><th>Hours with spray potential (5 d)</th><th>Water temperature used</th></tr></thead>
+  <tbody>{% for sid, s in d.services.items() if s.water_temp %}
+    <tr><td>{{ s.short }}</td><td>{{ s.spray_hours }}</td><td>{{ s.water_temp.value_c }} °C — {{ s.water_temp.basis }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+<h2 class="pb">Service detail</h2>
+{% for sid, s in d.services.items() %}
+<section class="service">
+  {% set worst = (s.daily.values()|map(attribute='overall')|max) if s.daily else -1 %}
+  <h3>{{ s.name }}<span class="badge l{{ worst }}">{{ level_name[worst]|upper if worst >= 0 else 'N/A' }}</span></h3>
+  <p>{{ n.services[sid] }}</p>
+  {% if s.img %}<figure><img src="{{ img(s.img) }}" alt="Meteogram {{ s.name }}"><figcaption>Five-day meteogram. Models: {{ s.models_used|join(', ') }}.</figcaption></figure>{% endif %}
+  {% if s.rules %}
+  <table>
+    <thead><tr><th>MES reference threshold</th><th>Wind from</th><th>Sustained</th></tr></thead>
+    <tbody>{% for r in s.rules %}
+      <tr><td>{{ r.label }}</td><td>{{ '%03d'|format(r.sector['from']) }}–{{ '%03d'|format(r.sector['to']) }}°{% if r.interpreted %}*{% endif %}</td>
+          <td>{{ r.threshold_kt }} kt</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% else %}<p class="small muted">No MES wind reference thresholds are defined for this service. Wind is shown for awareness; hazards (visibility, freezing spray, temperature, precipitation) are still assessed.</p>{% endif %}
+</section>
+{% endfor %}
+<p class="small muted">* Sector interpreted from a descriptive direction ("dead west", "hard east") as one compass point either side.</p>
+
+<h2>Environment Canada cross-check</h2>
+<p>{{ n.ec_crosscheck }}</p>
+{% for m in d.ec_marine or [] %}
+<div class="noalerts small"><strong>EC marine forecast — {{ m.name }}.</strong> {{ m.text|replace('\n',' ') }}
+{% if m.extended %}<br><span class="muted">{{ m.extended|replace('\n',' ') }}</span>{% endif %}</div>
+{% endfor %}
+
+<h2>Data sources and run times</h2>
+<table>
+  <thead><tr><th>Model</th><th>Run used (init)</th><th>Available</th></tr></thead>
+  <tbody>{% for mid, r in d.model_runs.items() %}
+    <tr><td>{{ r.name }}</td><td>{{ fmt_dt(r.init) }}</td><td>{{ fmt_dt(r.available) }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% if d.stale_models %}<p class="small" style="color:var(--red)">Stale or unknown: {{ d.stale_models|join('; ') }}.</p>{% endif %}
+{% set failed = d.source_log|rejectattr('ok')|list %}
+{% if failed %}
+<p class="small muted"><strong>Not retrieved this run:</strong> {% for f in failed %}{{ f.source }}{% if not loop.last %}; {% endif %}{% endfor %}.</p>
+{% endif %}
+<p class="small muted">Primary data: public numerical weather models taken directly from the issuing agencies — ECCC HRDPS, RDPS and GDPS (MSC GeoMet), NOAA GFS (NOMADS), and the ECMWF-based MET Norway forecast. Snowfall from EC models is treated as water equivalent at 10:1. Consensus is the hourly median across available models; the shaded band is the model range. Freezing spray potential uses the Overland (1990) icing predictor with fresh-water freezing point. Wind chill and humidex use the Environment and Climate Change Canada formulae. Narrative: {{ n.author }}.</p>
+
+<div class="disclaimer">
+This briefing compares forecast data with MES reference thresholds to support awareness and planning. Reference thresholds are planning values drawn from vessel experience and engineering studies; they are not operating limits, and a colour is not a decision. The Master makes the final decision on every crossing, using conditions observed on scene. Official warnings are those issued by Environment and Climate Change Canada.
+</div>
+{% if d.sample %}<div class="sample" style="margin-top:12px">SAMPLE DATA — synthetic test output. Not a forecast.</div>{% endif %}
+</main>
+</body>
+</html>

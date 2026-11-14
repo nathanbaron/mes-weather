@@ -1,0 +1,10 @@
+numpy
+matplotlib
+requests
+pyyaml
+jinja2
+pillow
+eccodes
+agentmail
+# coastlines on radar panels (downloads Natural Earth data on first use)
+cartopy
