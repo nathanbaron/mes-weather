@@ -178,3 +178,14 @@ def test_notice_wording_passes_the_language_check():
     assert flags == []
     assert language.check({"t": subject}) == []
     assert "Marine weather watch" in subject and "Master makes the final decision" in text
+
+
+def test_marine_warning_reaches_the_alert_header():
+    from mwb import fetch
+    marine = [{"name": "Eastern Lake Ontario", "url": "u", "warnings": ["Strong wind warning in effect"]},
+              {"name": "Kingston to Cornwall", "url": "u", "warnings": []}]
+    got = fetch.marine_warning_alerts(marine, [])
+    assert [(a["event"], a["areas"]) for a in got] == [("strong wind warning", ["Eastern Lake Ontario (EC marine forecast)"])]
+    # Already carried by the CAP feed: not listed twice.
+    assert fetch.marine_warning_alerts(marine, [{"event": "Strong Wind Warning"}]) == []
+    assert fetch.marine_warning_alerts([], []) == [] and fetch.marine_warning_alerts(None, []) == []

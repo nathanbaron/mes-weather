@@ -221,6 +221,27 @@ def fetch_ec_marine(cfg, log):
     return out
 
 
+def marine_warning_alerts(ec_marine, alerts):
+    """Warnings stated in the EC marine forecast text that the CAP feed did not carry.
+
+    EC marine warnings (strong wind, gale, storm, freezing spray) are issued with the
+    marine forecast and do not always appear in the CAP alert feed, so the header would
+    otherwise say no alerts are in effect while the marine forecast carries one.
+    """
+    have = {(a.get("event") or "").lower() for a in alerts}
+    out = []
+    for m in ec_marine or []:
+        for w in m.get("warnings", []):
+            event = re.sub(r"\s+in effect$", "", w).strip().lower()
+            if event in have:
+                continue
+            out.append({"id": f"marine:{m['name']}:{event}", "msg_type": "Alert", "event": event,
+                        "headline": f"{w} — {m['name']}", "severity": None, "urgency": None, "onset": None,
+                        "expires": None, "description": "", "areas": [f"{m['name']} (EC marine forecast)"],
+                        "services": [], "url": m["url"], "source": "EC marine forecast text"})
+    return out
+
+
 # --------------------------------------------------------------------------- imagery
 
 def fetch_radar_frames(cfg, extent, log, now_utc, kind="rain", frames=3, step_min=30, width=900):
