@@ -1,0 +1,408 @@
+{
+ "checked": "2026-11-21T16:44+00:00",
+ "checked_local": "Sat 21 Nov 11:44",
+ "model_runs": {
+  "hrdps": {
+   "name": "HRDPS 2.5 km",
+   "run": "2026-11-21T12:00+00:00",
+   "fetched": "2026-11-21T16:44+00:00"
+  },
+  "rdps": {
+   "name": "RDPS 10 km",
+   "run": "2026-11-21T12:00+00:00",
+   "fetched": "2026-11-21T16:44+00:00"
+  },
+  "gdps": {
+   "name": "GDPS 15 km",
+   "run": "2026-11-21T00:00+00:00",
+   "fetched": "2026-11-21T06:55+00:00"
+  },
+  "gfs": {
+   "name": "GFS 0.25\u00b0",
+   "run": "2026-11-21T12:00+00:00",
+   "fetched": "2026-11-21T16:44+00:00"
+  },
+  "ecmwf_metno": {
+   "name": "ECMWF (MET Norway)",
+   "run": "2026-11-21T13:17:31Z",
+   "fetched": "2026-11-21T16:44+00:00"
+  }
+ },
+ "models_updated_this_check": [
+  "hrdps",
+  "rdps",
+  "gfs",
+  "ecmwf_metno"
+ ],
+ "station_readings": [
+  {
+   "station": "KINGSTON CLIMATE",
+   "services": [
+    "wolfe",
+    "howe",
+    "simcoe",
+    "amherst"
+   ],
+   "time": "2026-11-21T16:43+00:00",
+   "wind_kt": 7.8,
+   "dir": 192,
+   "gust_kt": 9.8
+  },
+  {
+   "station": "POINT PETRE",
+   "services": [
+    "glenora"
+   ],
+   "time": "2026-11-21T16:43+00:00",
+   "wind_kt": 8.5,
+   "dir": 161,
+   "gust_kt": 9.7
+  }
+ ],
+ "observed_at_or_above": {},
+ "forecast_announced": {},
+ "services": {
+  "wolfe": {
+   "name": "Wolfe Island Ferry Service",
+   "short": "Wolfe Island",
+   "models_used": [
+    "HRDPS 2.5 km",
+    "RDPS 10 km",
+    "GDPS 15 km",
+    "GFS 0.25\u00b0",
+    "ECMWF (MET Norway)"
+   ],
+   "events": [
+    {
+     "category": "wind:2",
+     "label": "WOLFE ISLANDER IV \u2014 Kingston secondary ramp, SW quadrant",
+     "kind": "wind",
+     "level": 1,
+     "level_name": "yellow",
+     "start": "2026-11-21T20:00:00",
+     "end": "2026-11-21T20:00:00",
+     "first_peak": "2026-11-21T20:00:00",
+     "peak_time": "2026-11-21T20:00:00",
+     "peak": {
+      "wind": 10.6,
+      "gust": 13.85,
+      "dir": "S",
+      "dir_deg": 181.20052891128233,
+      "spread": 7.100000000000001
+     },
+     "why": "GFS 0.25\u00b0 shows gusts 25 kt S; consensus 14 kt",
+     "hours": 1
+    },
+    {
+     "category": "wind:2",
+     "label": "WOLFE ISLANDER IV \u2014 Kingston secondary ramp, SW quadrant",
+     "kind": "wind",
+     "level": 1,
+     "level_name": "yellow",
+     "start": "2026-11-22T22:00:00",
+     "end": "2026-11-22T23:00:00",
+     "first_peak": "2026-11-22T22:00:00",
+     "peak_time": "2026-11-22T22:00:00",
+     "peak": {
+      "wind": 10.6,
+      "gust": 16.799999999999997,
+      "dir": "S",
+      "dir_deg": 180.93297627423215,
+      "spread": 7.9
+     },
+     "why": "GFS 0.25\u00b0 shows gusts 29 kt S; consensus 17 kt",
+     "hours": 2
+    },
+    {
+     "category": "wind:2",
+     "label": "WOLFE ISLANDER IV \u2014 Kingston secondary ramp, SW quadrant",
+     "kind": "wind",
+     "level": 1,
+     "level_name": "yellow",
+     "start": "2026-11-23T13:00:00",
+     "end": "2026-11-23T14:00:00",
+     "first_peak": "2026-11-23T13:00:00",
+     "peak_time": "2026-11-23T13:00:00",
+     "peak": {
+      "wind": 14.15,
+      "gust": 25.4,
+      "dir": "W",
+      "dir_deg": 278.28577777215844,
+      "spread": 5.600000000000001
+     },
+     "why": "gusts 25 kt W, just outside the 180\u2013270\u00b0 sector",
+     "hours": 2
+    }
+   ],
+   "daily": {
+    "2026-11-21": {
+     "wind": 1,
+     "vis": 0
+    },
+    "2026-11-22": {
+     "wind": 1,
+     "vis": 0
+    },
+    "2026-11-23": {
+     "wind": 1,
+     "vis": 0
+    },
+    "2026-11-24": {
+     "wind": 0,
+     "vis": 0
+    }
+   },
+   "peak_wind": {
+    "2026-11-21": {
+     "wind": 11.3,
+     "gust": 18.6,
+     "dir": "S",
+     "time": "22:00"
+    },
+    "2026-11-22": {
+     "wind": 10.6,
+     "gust": 16.5,
+     "dir": "S",
+     "time": "21:00"
+    },
+    "2026-11-23": {
+     "wind": 14.15,
+     "gust": 25.4,
+     "dir": "W",
+     "time": "13:00"
+    },
+    "2026-11-24": {
+     "wind": 8.8,
+     "gust": 13.0,
+     "dir": "NW",
+     "time": "00:00"
+    }
+   }
+  },
+  "amherst": {
+   "name": "Amherst Island Ferry Service",
+   "short": "Amherst Island",
+   "models_used": [
+    "HRDPS 2.5 km",
+    "RDPS 10 km",
+    "GDPS 15 km",
+    "GFS 0.25\u00b0",
+    "ECMWF (MET Norway)"
+   ],
+   "events": [],
+   "daily": {
+    "2026-11-21": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-22": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-23": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-24": {
+     "wind": 0,
+     "vis": 0
+    }
+   },
+   "peak_wind": {
+    "2026-11-21": {
+     "wind": 9.2,
+     "gust": 13.55,
+     "dir": "S",
+     "time": "22:00"
+    },
+    "2026-11-22": {
+     "wind": 11.7,
+     "gust": 10.85,
+     "dir": "S",
+     "time": "20:00"
+    },
+    "2026-11-23": {
+     "wind": 14.0,
+     "gust": 25.8,
+     "dir": "WNW",
+     "time": "13:00"
+    },
+    "2026-11-24": {
+     "wind": 7.2,
+     "gust": 10.85,
+     "dir": "NW",
+     "time": "00:00"
+    }
+   }
+  },
+  "glenora": {
+   "name": "Glenora Ferry Service",
+   "short": "Glenora",
+   "models_used": [
+    "HRDPS 2.5 km",
+    "RDPS 10 km",
+    "GDPS 15 km",
+    "GFS 0.25\u00b0",
+    "ECMWF (MET Norway)"
+   ],
+   "events": [],
+   "daily": {
+    "2026-11-21": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-22": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-23": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-24": {
+     "wind": 0,
+     "vis": 0
+    }
+   },
+   "peak_wind": {
+    "2026-11-21": {
+     "wind": 11.4,
+     "gust": 13.25,
+     "dir": "S",
+     "time": "21:00"
+    },
+    "2026-11-22": {
+     "wind": 10.8,
+     "gust": 11.95,
+     "dir": "S",
+     "time": "19:00"
+    },
+    "2026-11-23": {
+     "wind": 15.55,
+     "gust": 23.9,
+     "dir": "WNW",
+     "time": "13:00"
+    },
+    "2026-11-24": {
+     "wind": 8.4,
+     "gust": 9.8,
+     "dir": "NW",
+     "time": "04:00"
+    }
+   }
+  },
+  "howe": {
+   "name": "Howe Island Ferry Service",
+   "short": "Howe Island",
+   "models_used": [
+    "HRDPS 2.5 km",
+    "RDPS 10 km",
+    "GDPS 15 km",
+    "GFS 0.25\u00b0",
+    "ECMWF (MET Norway)"
+   ],
+   "events": [],
+   "daily": {
+    "2026-11-21": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-22": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-23": {
+     "wind": 0,
+     "vis": 0
+    },
+    "2026-11-24": {
+     "wind": 0,
+     "vis": 0
+    }
+   },
+   "peak_wind": {
+    "2026-11-21": {
+     "wind": 11.9,
+     "gust": 14.8,
+     "dir": "SSW",
+     "time": "23:00"
+    },
+    "2026-11-22": {
+     "wind": 11.4,
+     "gust": 13.25,
+     "dir": "SSW",
+     "time": "00:00"
+    },
+    "2026-11-23": {
+     "wind": 13.149999999999999,
+     "gust": 22.1,
+     "dir": "W",
+     "time": "11:00"
+    },
+    "2026-11-24": {
+     "wind": 8.7,
+     "gust": 12.15,
+     "dir": "NW",
+     "time": "00:00"
+    }
+   }
+  },
+  "simcoe": {
+   "name": "Simcoe Island Ferry Service",
+   "short": "Simcoe Island",
+   "models_used": [
+    "HRDPS 2.5 km",
+    "RDPS 10 km",
+    "GDPS 15 km",
+    "GFS 0.25\u00b0",
+    "ECMWF (MET Norway)"
+   ],
+   "events": [],
+   "daily": {
+    "2026-11-21": {
+     "wind": -1,
+     "vis": 0
+    },
+    "2026-11-22": {
+     "wind": -1,
+     "vis": 0
+    },
+    "2026-11-23": {
+     "wind": -1,
+     "vis": 0
+    },
+    "2026-11-24": {
+     "wind": -1,
+     "vis": 0
+    }
+   },
+   "peak_wind": {
+    "2026-11-21": {
+     "wind": 12.4,
+     "gust": 18.35,
+     "dir": "S",
+     "time": "21:00"
+    },
+    "2026-11-22": {
+     "wind": 12.7,
+     "gust": 16.799999999999997,
+     "dir": "S",
+     "time": "22:00"
+    },
+    "2026-11-23": {
+     "wind": 14.15,
+     "gust": 25.4,
+     "dir": "W",
+     "time": "13:00"
+    },
+    "2026-11-24": {
+     "wind": 8.8,
+     "gust": 13.0,
+     "dir": "NW",
+     "time": "00:00"
+    }
+   }
+  }
+ },
+ "source_failures": []
+}
