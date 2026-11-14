@@ -1,0 +1,7 @@
+# The watcher needs less than the briefing: no charts, no PDF.
+numpy
+requests
+pyyaml
+pillow
+eccodes
+agentmail

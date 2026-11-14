@@ -5,6 +5,8 @@
 # (MES Command Centre, data source collection://c81d64e1-dbf4-4ea7-8e8a-31b84274fae2).
 # When a threshold changes there, change it here in the same commit.
 #
+# A rule is measured on sustained wind unless it carries `measure: gust`.
+#
 # Sectors are compass bearings the wind blows FROM, inclusive, clockwise from
 # `from` to `to`. Where the Notion row says "dead west" or "hard east", the
 # sector below is +/- 22.5 degrees (one compass point either side). That is an
@@ -86,10 +88,11 @@ services:
         note: Higher thrust needed to hold alongside; a power-management factor.
       - label: WOLFE ISLANDER IV — Kingston secondary ramp, SW quadrant
         threshold_kt: 20
+        measure: gust           # compared with gusts, not sustained wind (Nathan, 14 Nov 2026: gusts set her off the dock)
         sector: {from: 180, to: 270}
         vessel: WOLFE ISLANDER IV
         risk: Docking
-        note: Kongsberg desktop manoeuvring study (May 2026) assessed berthing at the Kingston secondary ramp in sustained SW winds to roughly 20 kt, with little margin.
+        note: Kongsberg desktop manoeuvring study (May 2026) assessed berthing at the Kingston secondary ramp in sustained SW winds to roughly 20 kt, with little margin. MES applies the 20 kt figure to gusts.
         source: Notion — Wolfe Islander IV Berthing Limits and Mitigation Options
 
   - id: amherst
@@ -213,3 +216,29 @@ distribution:
   recipients:
     - nathan.baron@ontario.ca
     - elysiavirelle@agentmail.to
+
+# Weather watch (scripts/watch.py). Runs through the day between briefings, with no
+# model in the loop: plain code compares the forecast and the latest station readings
+# with the rules above and sends a short notice only when something changes.
+watch:
+  horizon_h: 72               # forecast notices look this far ahead
+  notify_level: 2             # 2 = red only (at or above a reference threshold); 1 adds yellow
+  categories: [wind, vis]     # which checks send notices; spray, fzra, snow, temp, thunder are computed but silent
+  clear_after_runs: 2         # a forecast notice is withdrawn after this many model updates without it
+  model_max_age_h: 18         # a model run older than this is left out of the consensus
+  metno_refresh_min: 60
+  obs:
+    max_age_min: 60           # readings older than this are ignored
+    renotify_h: 3             # while a reading stays at or above a threshold, repeat no more often than this...
+    renotify_rise_kt: 5       # ...unless it has risen by this much since the last notice
+    clear_after_checks: 2     # consecutive checks below the threshold before the condition is treated as over
+    api: https://api.weather.gc.ca/collections/swob-realtime/items
+    stations:                 # ECCC surface stations; shore readings, not conditions on the route
+      - {name: KINGSTON CLIMATE, msc_id: "6104142", services: [wolfe, howe, simcoe, amherst]}
+      - {name: POINT PETRE, msc_id: "6156559", services: [glenora], verify: true}   # open-lake exposure; nearest ECCC wind to Glenora
+    # No observed visibility: Kingston Airport (CYGK) publishes none through this feed
+    # (checked 14 Nov 2026). Visibility notices come from the forecast only.
+  alerts:
+    from_inbox: mes-weather-briefing@agentmail.to
+    recipients:
+      - nathan.baron@ontario.ca
