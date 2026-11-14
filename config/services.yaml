@@ -216,6 +216,8 @@ distribution:
   method: email
   provider: agentmail          # API key in the AGENTMAIL_API_KEY environment variable
   from_inbox: mes-weather-briefing@agentmail.to
+  # One email per address, never one email to several. The ontario.ca copy is
+  # forwarded automatically to managers, so no other address may appear on it.
   recipients:
     - nathan.baron@ontario.ca
     - elysiavirelle@agentmail.to

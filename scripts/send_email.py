@@ -4,6 +4,7 @@
   python send_email.py --out DIR [--to addr ...] [--dry-run] [--force]
 
 Reads the sender inbox and recipients from config/services.yaml (distribution),
+sends one separate email to each recipient,
 and the API key from the AGENTMAIL_API_KEY environment variable. The body is
 email.html (summary, colour grid, key times, synopsis); briefing.pdf is attached.
 
@@ -52,7 +53,7 @@ def main():
     html = (out / "email.html").read_text()
     text = re.sub(r"\n\s*\n+", "\n\n", _html.unescape(re.sub(r"<[^>]+>", "", re.sub(r"<br\s*/?>|</(div|p|tr)>", "\n", html))))
     fname = f"Marine-Weather-Briefing-{data['generated_local'][:10]}.pdf"
-    print(f"from {cfg['from_inbox']} to {to}\nsubject: {subject}\nattachment: {fname} ({pdf.stat().st_size:,} bytes)")
+    print(f"from {cfg['from_inbox']}, one email each to {to}\nsubject: {subject}\nattachment: {fname} ({pdf.stat().st_size:,} bytes)")
     if a.dry_run:
         return
 
@@ -61,13 +62,23 @@ def main():
         sys.exit("AGENTMAIL_API_KEY is not set in the environment")
     from agentmail import AgentMail
     client = AgentMail(api_key=key)
-    r = client.inboxes.messages.send(
-        cfg["from_inbox"], to=to, subject=subject, html=html, text=text,
-        attachments=[{"filename": fname, "content_type": "application/pdf",
-                      "content": base64.b64encode(pdf.read_bytes()).decode()}],
-        idempotency_key=re.sub(r"[^A-Za-z0-9._~-]", "-", f"mwb-{data['generated_local']}-{'-'.join(to)}"),
-    )
-    print(f"sent: message {r.message_id}")
+    # One email per recipient, so no recipient sees another's address. The ontario.ca
+    # copy is forwarded on automatically and must carry only itself.
+    attachment = {"filename": fname, "content_type": "application/pdf",
+                  "content": base64.b64encode(pdf.read_bytes()).decode()}
+    failed = []
+    for addr in to:
+        try:
+            r = client.inboxes.messages.send(
+                cfg["from_inbox"], to=[addr], subject=subject, html=html, text=text, attachments=[attachment],
+                idempotency_key=re.sub(r"[^A-Za-z0-9._~-]", "-", f"mwb-{data['generated_local']}-{addr}"),
+            )
+            print(f"sent to {addr}: message {r.message_id}")
+        except Exception as e:  # noqa: BLE001 — keep going so one bad address does not block the rest
+            failed.append(addr)
+            print(f"NOT sent to {addr}: {e}")
+    if failed:
+        sys.exit(f"send failed for: {', '.join(failed)}")
 
 
 if __name__ == "__main__":
