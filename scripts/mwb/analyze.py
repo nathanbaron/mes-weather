@@ -160,7 +160,8 @@ def assess_service(cfg, service, cons, water_temp_c):
     # ---- wind rules
     # A rule is measured on sustained wind unless it says `measure: gust`, in which
     # case the gust is compared with the threshold (sustained wind stands in for an
-    # hour where no model supplies a gust).
+    # hour where no model supplies a gust). `threshold_kt` is where the rule turns red.
+    # Yellow starts `yellow_margin_kt` below it, or at the rule's own `yellow_kt` if it has one.
     for r_i, rule in enumerate(service["rules"]):
         lvl = np.zeros(n, dtype=int)
         why = [""] * n
@@ -181,7 +182,11 @@ def assess_service(cfg, service, cons, water_temp_c):
             if ins and v >= T:
                 lvl[i], why[i] = 2, f"{what} {v:.0f} kt {compass(d)}, at or above the {ref}"
                 continue
-            if ins and v >= T - sr["yellow_margin_kt"]:
+            if ins and "yellow_kt" in rule and v >= rule["yellow_kt"]:
+                lvl[i], why[i] = 1, (f"{what} {v:.0f} kt {compass(d)}, at or above the {rule['yellow_kt']} kt "
+                                     f"{'gust ' if on_gust else ''}reference for yellow (red at {T} kt)")
+                continue
+            if ins and "yellow_kt" not in rule and v >= T - sr["yellow_margin_kt"]:
                 lvl[i], why[i] = 1, f"{what} {v:.0f} kt {compass(d)}, within {sr['yellow_margin_kt']} kt of the {ref}"
                 continue
             if ins and not on_gust and sr["gusts_to_yellow"] and not np.isnan(g) and g >= T:

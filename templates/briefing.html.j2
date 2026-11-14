@@ -160,7 +160,7 @@
     <thead><tr><th>MES reference threshold</th><th>Wind from</th><th>Threshold</th></tr></thead>
     <tbody>{% for r in s.rules %}
       <tr><td>{{ r.label }}</td><td>{{ '%03d'|format(r.sector['from']) }}–{{ '%03d'|format(r.sector['to']) }}°{% if r.interpreted %}*{% endif %}</td>
-          <td>{{ r.threshold_kt }} kt {{ 'gusts' if r.measure == 'gust' else 'sustained' }}</td></tr>
+          <td>{% if r.yellow_kt %}{{ r.yellow_kt }} kt yellow, {{ r.threshold_kt }} kt red, {% else %}{{ r.threshold_kt }} kt {% endif %}{{ 'gusts' if r.measure == 'gust' else 'sustained' }}</td></tr>
     {% endfor %}</tbody>
   </table>
   {% else %}<p class="small muted">No MES wind reference thresholds are defined for this service. Wind is shown for awareness; hazards (visibility, freezing spray, temperature, precipitation) are still assessed.</p>{% endif %}

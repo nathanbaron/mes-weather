@@ -42,20 +42,25 @@ def wi4(asmt):
 
 
 def test_wi4_rule_is_measured_on_gusts():
-    # Sustained 13 kt SW with gusts of 22 kt: red for WOLFE ISLANDER IV, on the gust.
-    _, asmt, _ = assess("wolfe", wind=13, gust=14, bump=[(10, 12, "wind_gusts_10m", 22)])
+    # Sustained 13 kt SW: gusts of 22 kt are yellow, gusts of 25 kt are red.
+    _, asmt, _ = assess("wolfe", wind=13, gust=14, bump=[(10, 12, "wind_gusts_10m", 22), (30, 31, "wind_gusts_10m", 25)])
     lvl = wi4(asmt)["level"]
-    assert list(lvl[10:13]) == [2, 2, 2] and lvl[9] == 0
-    assert "gusts 22 kt" in wi4(asmt)["why"][10] and "gust reference" in wi4(asmt)["why"][10]
+    assert list(lvl[9:14]) == [0, 1, 1, 1, 0] and list(lvl[29:33]) == [0, 2, 2, 0]
+    assert "gusts 22 kt" in wi4(asmt)["why"][10] and "20 kt gust reference" in wi4(asmt)["why"][10]
+    assert "at or above the 25 kt gust reference" in wi4(asmt)["why"][30]
 
 
 def test_wi4_gusts_outside_sector_stay_green():
-    _, asmt, _ = assess("wolfe", wind=13, gust=25, direction=45)
+    _, asmt, _ = assess("wolfe", wind=13, gust=28, direction=45)
     assert wi4(asmt)["level"].max() == 0
 
 
-def test_wi4_gusts_near_threshold_are_yellow():
-    _, asmt, _ = assess("wolfe", wind=10, gust=17)
+def test_wi4_yellow_starts_at_twenty():
+    _, asmt, _ = assess("wolfe", wind=10, gust=19)
+    assert set(wi4(asmt)["level"]) == {0}
+    _, asmt, _ = assess("wolfe", wind=10, gust=20)
+    assert set(wi4(asmt)["level"]) == {1}
+    _, asmt, _ = assess("wolfe", wind=10, gust=24.9)
     assert set(wi4(asmt)["level"]) == {1}
 
 
@@ -89,10 +94,10 @@ def run(st, now=NOW, changed=True):
 
 
 def test_forecast_notice_sent_once_then_withdrawn():
-    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 23)])
+    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 27)])
     items, _ = run(st)
     assert [(i["type"], i["service"]) for i in items] == [("forecast", "Wolfe Island")]
-    assert "WOLFE ISLANDER IV" in items[0]["label"] and "gusts 23 kt" in items[0]["text"]
+    assert "WOLFE ISLANDER IV" in items[0]["label"] and "gusts 27 kt" in items[0]["text"]
     assert run(st)[0] == []                                # same forecast: silence
 
     calm = state_with(wind=13, gust=14)
@@ -103,7 +108,7 @@ def test_forecast_notice_sent_once_then_withdrawn():
 
 
 def test_forecast_period_that_shifts_is_not_announced_twice():
-    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 23)])
+    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 27)])
     run(st)
     later = state_with(wind=13, gust=14, bump=[(23, 27, "wind_gusts_10m", 23)])
     later["announced"] = st["announced"]
@@ -111,7 +116,7 @@ def test_forecast_period_that_shifts_is_not_announced_twice():
 
 
 def test_same_models_do_not_withdraw():
-    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 23)])
+    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 27)])
     run(st)
     calm = state_with(wind=13, gust=14)
     calm["announced"] = st["announced"]
@@ -128,10 +133,10 @@ def test_visibility_notice_groups_services():
 
 
 def test_cache_follows_the_clock():
-    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 23)])
+    st = state_with(wind=13, gust=14, bump=[(20, 24, "wind_gusts_10m", 27)])
     per, axis = watch.cached_models(CFG, st, NOW + dt.timedelta(hours=5), TZ)
     g = per["wolfe"]["HRDPS 2.5 km"]["wind_gusts_10m"]
-    assert g[15:20] == [23.0] * 5 and g[14] == 14.0       # five hours on, the same period sits five hours sooner
+    assert g[15:20] == [27.0] * 5 and g[14] == 14.0       # five hours on, the same period sits five hours sooner
     per, _ = watch.cached_models(CFG, st, NOW + dt.timedelta(hours=19), TZ)
     assert per["wolfe"] == {}                              # past model_max_age_h: left out
 
@@ -144,12 +149,13 @@ def reading(wind, gust, direction, minutes=0, services=("wolfe", "howe", "simcoe
 def test_observed_gust_notice_and_repeat_rules():
     st = {}
     at = lambda m: NOW + dt.timedelta(minutes=m)  # noqa: E731
-    items = watch.diff_obs(CFG, st, reading(14, 22, 230), at(0), TZ)
+    assert watch.diff_obs(CFG, st, reading(14, 22, 230), at(0), TZ) == []                # yellow range: silent
+    items = watch.diff_obs(CFG, st, reading(14, 26, 230), at(0), TZ)
     assert [i["label"] for i in items] == ["WOLFE ISLANDER IV — Kingston secondary ramp, SW quadrant"]
-    assert "10-minute peak 22 kt" in items[0]["text"] and "20 kt gust reference" in items[0]["text"]
-    assert watch.diff_obs(CFG, st, reading(14, 23, 230, 30), at(30), TZ) == []           # still on: silence
-    assert len(watch.diff_obs(CFG, st, reading(16, 28, 230, 60), at(60), TZ)) == 1       # risen 5 kt: repeat
-    assert len(watch.diff_obs(CFG, st, reading(16, 28, 230, 250), at(250), TZ)) == 1     # three hours on: repeat
+    assert "10-minute peak 26 kt" in items[0]["text"] and "25 kt gust reference" in items[0]["text"]
+    assert watch.diff_obs(CFG, st, reading(14, 27, 230, 30), at(30), TZ) == []           # still on: silence
+    assert len(watch.diff_obs(CFG, st, reading(16, 32, 230, 60), at(60), TZ)) == 1       # risen 5 kt: repeat
+    assert len(watch.diff_obs(CFG, st, reading(16, 32, 230, 250), at(250), TZ)) == 1     # three hours on: repeat
     assert watch.diff_obs(CFG, st, reading(8, 12, 230, 280), at(280), TZ) == [] and st["obs_active"]
     assert watch.diff_obs(CFG, st, reading(8, 12, 230, 310), at(310), TZ) == [] and not st["obs_active"]
 

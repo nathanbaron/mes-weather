@@ -6,6 +6,7 @@
 # When a threshold changes there, change it here in the same commit.
 #
 # A rule is measured on sustained wind unless it carries `measure: gust`.
+# `threshold_kt` is where a rule turns red; `yellow_kt`, if given, is where it turns yellow.
 #
 # Sectors are compass bearings the wind blows FROM, inclusive, clockwise from
 # `from` to `to`. Where the Notion row says "dead west" or "hard east", the
@@ -87,12 +88,14 @@ services:
         risk: Thrust/Power
         note: Higher thrust needed to hold alongside; a power-management factor.
       - label: WOLFE ISLANDER IV — Kingston secondary ramp, SW quadrant
-        threshold_kt: 20
-        measure: gust           # compared with gusts, not sustained wind (Nathan, 14 Nov 2026: gusts set her off the dock)
+        threshold_kt: 25        # red
+        yellow_kt: 20           # yellow
+        measure: gust           # compared with gusts, not sustained wind (Nathan, 14 Nov 2026: gusts set her off the dock;
+                                # yellow at 20 kt, red at 25 kt)
         sector: {from: 180, to: 270}
         vessel: WOLFE ISLANDER IV
         risk: Docking
-        note: Kongsberg desktop manoeuvring study (May 2026) assessed berthing at the Kingston secondary ramp in sustained SW winds to roughly 20 kt, with little margin. MES applies the 20 kt figure to gusts.
+        note: Kongsberg desktop manoeuvring study (May 2026) assessed berthing at the Kingston secondary ramp in sustained SW winds to roughly 20 kt, with little margin. MES applies it to gusts, yellow at 20 kt and red at 25 kt.
         source: Notion — Wolfe Islander IV Berthing Limits and Mitigation Options
 
   - id: amherst
