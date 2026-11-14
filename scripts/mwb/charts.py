@@ -116,10 +116,12 @@ def meteogram(service, cons, assessment, events, tz, max_notes=5):
     by_t = {}
     for r in service["rules"]:
         sec = f"{r['sector']['from']:03d}–{r['sector']['to']:03d}°" + (f" {r['vessel']}" if r.get("vessel") else "")
-        by_t.setdefault(r["threshold_kt"], []).append(sec)
-    for T, secs in by_t.items():
-        a_wind.axhline(T, color=RED, lw=0.9, alpha=0.75, zorder=1)
-        a_wind.text(times[-1], T + 0.6, f"{T} kt from " + " / ".join(secs), ha="right", va="bottom",
+        by_t.setdefault((r["threshold_kt"], r.get("measure") == "gust"), []).append(sec)
+        if r.get("yellow_kt"):
+            a_wind.axhline(r["yellow_kt"], color=LEVEL_COLOUR[1], lw=0.9, alpha=0.9, zorder=1, ls=(0, (3, 2)))
+    for (T, on_gust), secs in by_t.items():
+        a_wind.axhline(T, color=RED, lw=0.9, alpha=0.75, zorder=1, ls=(0, (3, 2)) if on_gust else "-")
+        a_wind.text(times[-1], T + 0.6, f"{T} kt {'gusts ' if on_gust else ''}from " + " / ".join(secs), ha="right", va="bottom",
                     fontsize=7, color=RED, bbox=dict(fc="white", ec="none", pad=0.5, alpha=0.8))
     a_wind.set_ylim(0, ymax)
     a_wind.set_ylabel("Wind (kt)")

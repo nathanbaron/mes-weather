@@ -137,7 +137,7 @@ def build_consensus(models, display=None):
         "vis_m": _nanstat(_arr(models, "visibility")),
         "cape": _nanstat(_arr(models, "cape")),
         "cloud": _nanstat(_arr(models, "cloud_cover")),
-        "_spd": spd, "_dir": wdir, "_code": _arr(models, "weather_code"),
+        "_spd": spd, "_gst": gst, "_dir": wdir, "_code": _arr(models, "weather_code"),
     }
     n = len(times)
     c["wind_chill"] = np.array([wind_chill(c["temp"][i], c["wind"][i]) if not np.isnan(c["temp"][i]) else np.nan
@@ -158,34 +158,50 @@ def assess_service(cfg, service, cons, water_temp_c):
     cats = {}
 
     # ---- wind rules
+    # A rule is measured on sustained wind unless it says `measure: gust`, in which
+    # case the gust is compared with the threshold (sustained wind stands in for an
+    # hour where no model supplies a gust). `threshold_kt` is where the rule turns red.
+    # Yellow starts `yellow_margin_kt` below it, or at the rule's own `yellow_kt` if it has one.
     for r_i, rule in enumerate(service["rules"]):
         lvl = np.zeros(n, dtype=int)
         why = [""] * n
         T = rule["threshold_kt"]
+        on_gust = rule.get("measure", "sustained") == "gust"
+        per_model = cons["_gst"] if on_gust else cons["_spd"]
         for i in range(n):
             w, g, d = cons["wind"][i], cons["gust"][i], cons["dir"][i]
             if np.isnan(w) or np.isnan(d):
                 lvl[i] = -1
                 continue
             ins = in_sector(d, rule["sector"])
-            if ins and w >= T:
-                lvl[i], why[i] = 2, f"sustained {w:.0f} kt {compass(d)}, at or above the {T} kt reference"
+            if on_gust:
+                v = w if np.isnan(g) else g
+                what, ref = ("sustained" if np.isnan(g) else "gusts"), f"{T} kt gust reference"
+            else:
+                v, what, ref = w, "sustained", f"{T} kt reference"
+            if ins and v >= T:
+                lvl[i], why[i] = 2, f"{what} {v:.0f} kt {compass(d)}, at or above the {ref}"
                 continue
-            if ins and w >= T - sr["yellow_margin_kt"]:
-                lvl[i], why[i] = 1, f"sustained {w:.0f} kt {compass(d)}, within {sr['yellow_margin_kt']} kt of the {T} kt reference"
+            if ins and "yellow_kt" in rule and v >= rule["yellow_kt"]:
+                lvl[i], why[i] = 1, (f"{what} {v:.0f} kt {compass(d)}, at or above the {rule['yellow_kt']} kt "
+                                     f"{'gust ' if on_gust else ''}reference for yellow (red at {T} kt)")
                 continue
-            if ins and sr["gusts_to_yellow"] and not np.isnan(g) and g >= T:
+            if ins and "yellow_kt" not in rule and v >= T - sr["yellow_margin_kt"]:
+                lvl[i], why[i] = 1, f"{what} {v:.0f} kt {compass(d)}, within {sr['yellow_margin_kt']} kt of the {ref}"
+                continue
+            if ins and not on_gust and sr["gusts_to_yellow"] and not np.isnan(g) and g >= T:
                 lvl[i], why[i] = 1, f"gusts {g:.0f} kt {compass(d)}, at or above the {T} kt reference"
                 continue
-            if sr["near_sector_deg"] and w >= T and sector_distance(d, rule["sector"]) <= sr["near_sector_deg"]:
-                lvl[i], why[i] = 1, f"{w:.0f} kt {compass(d)}, just outside the {rule['sector']['from']}–{rule['sector']['to']}° sector"
+            if sr["near_sector_deg"] and v >= T and sector_distance(d, rule["sector"]) <= sr["near_sector_deg"]:
+                lvl[i], why[i] = 1, f"{what} {v:.0f} kt {compass(d)}, just outside the {rule['sector']['from']}–{rule['sector']['to']}° sector"
                 continue
             if sr["model_outlier_to_yellow"]:
-                for m_i in range(cons["_spd"].shape[0]):
-                    ms, md = cons["_spd"][m_i, i], cons["_dir"][m_i, i]
+                for m_i in range(per_model.shape[0]):
+                    ms, md = per_model[m_i, i], cons["_dir"][m_i, i]
                     if not np.isnan(ms) and not np.isnan(md) and ms >= T and in_sector(md, rule["sector"]):
                         lvl[i] = 1
-                        why[i] = f"{cons['models'][m_i]} shows {ms:.0f} kt {compass(md)}; consensus {w:.0f} kt"
+                        why[i] = (f"{cons['models'][m_i]} shows {'gusts ' if on_gust else ''}{ms:.0f} kt {compass(md)}; "
+                                  f"consensus {v:.0f} kt")
                         break
         cats[f"wind:{r_i}"] = {"label": rule["label"], "kind": "wind", "rule": rule, "level": lvl, "why": why}
 
@@ -275,7 +291,9 @@ def extract_events(cons, assessment, tz, gap_h=2):
                 seg = slice(i, j + 1)
                 peak_level = int(lvl[seg].max())
                 if cat["kind"] == "wind":
-                    k = i + int(np.nanargmax(np.nan_to_num(cons["wind"][seg], nan=-1)))
+                    on_gust = cat["rule"].get("measure", "sustained") == "gust"
+                    series = np.where(np.isnan(cons["gust"]), cons["wind"], cons["gust"]) if on_gust else cons["wind"]
+                    k = i + int(np.nanargmax(np.nan_to_num(series[seg], nan=-1)))
                     peak = {"wind": float(cons["wind"][k]),
                             "gust": None if np.isnan(cons["gust"][k]) else float(cons["gust"][k]),
                             "dir": compass(cons["dir"][k]), "dir_deg": float(cons["dir"][k]),

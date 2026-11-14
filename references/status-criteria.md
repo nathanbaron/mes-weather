@@ -16,7 +16,7 @@ hour of each day for the summary grid.
 |---|---|---|---|---|
 | Wolfe Island | SW to NW | 30 kt | 210–315° | Notion row |
 | Wolfe Island | Kingston Terminal, hard west | 30 kt | 248–292°* | Notion row |
-| Wolfe Island | WOLFE ISLANDER IV, Kingston SVR | 20 kt | 180–270° | Kongsberg study, May 2026 |
+| Wolfe Island | WOLFE ISLANDER IV, Kingston SVR | **gusts**: yellow 20 kt, red 25 kt | 180–270° | Kongsberg study, May 2026; applied to gusts, yellow 20 / red 25 (Nathan, 14 Nov 2026) |
 | Amherst Island | Dead west / dead east | 30 kt | 248–292° / 068–112°* | Notion row |
 | Glenora | East quadrant | 20 kt | 045–135° | Notion row |
 | Howe Island | Hard east (cable tension) | 25 kt | 068–112°* | Notion row |
@@ -26,7 +26,12 @@ hour of each day for the summary grid.
 \* Interpreted as one compass point (22.5°) either side of the named direction.
 Confirm or replace with explicit bearings.
 
-Thresholds are treated as **sustained** wind. The informal 30 kt Wolfe Island
+Thresholds are treated as **sustained** wind, except a rule marked
+`measure: gust` in the config, which is compared with gusts. The WOLFE
+ISLANDER IV secondary ramp rule is the only gust rule: gusts set her off the
+dock. It also sets its own yellow (`yellow_kt: 20`) in place of the 5 kt
+margin: yellow from 20 kt gusts, red from 25 kt. For a gust rule, read "gusts"
+for "sustained" in the colours below. The informal 30 kt Wolfe Island
 figure is an internal capability judgement and master's discretion, not a
 Transport Canada limit (Nathan and Rob, 16 Oct 2026).
 

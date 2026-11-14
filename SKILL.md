@@ -36,6 +36,8 @@ capitals, no emoji, nothing personal.
 - `references/status-criteria.md` — what green, yellow and red mean
 - `references/model-schedule.md` — run times and why 05:00 is a 00Z brief
 - `references/narrative-guide.md` — how to write each section
+- `scripts/watch.py` — the weather watch that runs between briefings (see below)
+- `tests/` — `python -m pytest tests -q`
 
 Requires Python 3.10+ and `requirements.txt` (`eccodes` decodes GFS GRIB);
 `cartopy` optional (coastlines on radar). PDF uses headless Chromium.
@@ -115,3 +117,45 @@ yellow logic are proposals in the config; change them there.
 `python scripts/brief.py all --out /tmp/mwb --sample` runs the whole pipeline on
 synthetic data. The output is stamped SAMPLE DATA throughout and must never be
 distributed.
+
+## Weather watch (between briefings)
+
+`scripts/watch.py` runs on a timer through the day. No model writes anything:
+plain code checks the weather and emails a short notice only when something
+changes. Settings are under `watch:` in `config/services.yaml`.
+
+Each run:
+
+1. Reads the latest ECCC station winds (Kingston Climate; Point Petre for
+   Glenora) and compares them with the wind rules. Shore stations, not
+   conditions on the route; the notice says so. No observed visibility is
+   available near Kingston.
+2. Asks each model whether it has a new run and re-fetches only those that do
+   (wind, gust, direction, visibility; 72 h). A check with no new run takes a
+   few seconds; a check where every model is new takes about two minutes.
+3. Rebuilds the consensus with `mwb/analyze.py`, the same code the briefing
+   uses, so the two cannot disagree.
+4. Sends one email when a wind rule or visibility is newly red in the forecast,
+   when a station reads at or above a threshold, or when an announced period
+   has left the forecast for two model updates running. Otherwise silent.
+
+A period that shifts by a few hours between runs is not announced twice. A
+station that stays at or above a threshold repeats no more than every three
+hours, sooner if it rises 5 kt.
+
+State is three files in the folder given by `--state`: `state.json` (model
+cache and what has been sent), `latest.json` (the current picture, readable by
+the briefing or anyone else) and `alerts.jsonl` (every notice sent).
+
+    python scripts/watch.py --state state --dry-run    # print, do not send
+
+**On GitHub.** `.github/workflows/watch.yml` runs it every 30 minutes by day and
+hourly overnight, and keeps the state on the `watch-state` branch. It needs the
+repository secret `AGENTMAIL_API_KEY`; until that exists each run does nothing
+and says so. Optional secret `MWB_HEARTBEAT_URL`: an address the watch pings
+after every good run, so an outside monitor can report when it goes quiet.
+A failed send exits with an error and announces nothing, so the next run
+tries again.
+
+**On a computer.** The same command on a timer (Task Scheduler or cron), with
+`AGENTMAIL_API_KEY` set and `--state` pointing at a local folder.

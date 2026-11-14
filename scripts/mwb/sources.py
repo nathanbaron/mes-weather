@@ -207,8 +207,10 @@ def _sample(grid, lat, lon):
     return None if (math.isnan(v) or abs(v) > 1e8) else float(v)
 
 
-def fetch_ec_model(key, wms, services, axis, log, workers=12, thin_after_h=48):
+def fetch_ec_model(key, wms, services, axis, log, workers=12, thin_after_h=48, fields=None):
+    """`fields` limits the fetch to those series (the watcher needs only wind and visibility)."""
     m = EC_MODELS[key]
+    layers = {f: v for f, v in m["layers"].items() if fields is None or f in fields}
     session = requests.Session()
     session.headers.update(UA)
     try:
@@ -244,7 +246,7 @@ def fetch_ec_model(key, wms, services, axis, log, workers=12, thin_after_h=48):
             _time.sleep(1.5 * (attempt + 1))
         return field, t, None
 
-    jobs = [(f, layer, t) for f, (layer, _, _) in m["layers"].items() for t in want]
+    jobs = [(f, layer, t) for f, (layer, _, _) in layers.items() for t in want]
     grids = {}
     with cf.ThreadPoolExecutor(workers) as ex:
         for field, t, g in ex.map(one, jobs):
@@ -259,7 +261,7 @@ def fetch_ec_model(key, wms, services, axis, log, workers=12, thin_after_h=48):
     out = {}
     for s in services:
         cols = {}
-        for field, (_, kind, scale) in m["layers"].items():
+        for field, (_, kind, scale) in layers.items():
             series = {}
             for t in want:
                 g = grids.get((field, t))
@@ -292,7 +294,7 @@ def _gfs_cycle(nomads, now_utc, session, log):
     return None
 
 
-def fetch_gfs(nomads, services, axis, now_utc, log, pace_s=0.55):
+def fetch_gfs(nomads, services, axis, now_utc, log, pace_s=0.55, hourly_until=48):
     try:
         import eccodes
     except ImportError as e:
@@ -309,7 +311,7 @@ def fetch_gfs(nomads, services, axis, now_utc, log, pace_s=0.55):
     la1 = max(s["lat"] for s in services) + 0.5
     end_h = int((axis[-1] - cyc).total_seconds() // 3600) + 1
     start_h = max(0, int((axis[0] - cyc).total_seconds() // 3600) - 6)
-    hours = [h for h in range(start_h, min(end_h, 120) + 1) if h <= 48 or h % 3 == 0]
+    hours = [h for h in range(start_h, min(end_h, 120) + 1) if h <= hourly_until or h % 3 == 0]
     raw = {s["id"]: {f: {} for f in ("u", "v", "gust", "t2", "d2", "msl", "tp", "csnow", "cfrzr", "cape", "vis")}
            for s in services}
     ok = 0

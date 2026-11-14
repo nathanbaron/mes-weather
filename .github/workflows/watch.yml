@@ -1,0 +1,74 @@
+name: Weather watch
+
+# Checks station winds and the forecast between briefings. Plain code, no AI.
+# Times are UTC (GitHub has no time-zone setting for schedules). In winter (EST):
+#   every 30 minutes from 04:07 to 21:37, hourly overnight.
+on:
+  schedule:
+    - cron: "7,37 9-23,0-2 * * *"
+    - cron: "7 3-8 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the notice in the run log; do not email it"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write          # to save the watcher's state on the watch-state branch
+
+concurrency:
+  group: weather-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AGENTMAIL_API_KEY: ${{ secrets.AGENTMAIL_API_KEY }}
+      MWB_HEARTBEAT_URL: ${{ secrets.MWB_HEARTBEAT_URL }}
+      MWB_CONTACT: ${{ vars.MWB_CONTACT }}
+      READY: ${{ secrets.AGENTMAIL_API_KEY != '' || inputs.dry_run }}
+    steps:
+      - name: Not set up yet
+        if: env.READY != 'true'
+        run: echo "::warning::AGENTMAIL_API_KEY is not set in this repository's secrets, so the watch did nothing. Add it under Settings, Secrets and variables, Actions."
+
+      - uses: actions/checkout@v4
+        if: env.READY == 'true'
+
+      - uses: actions/setup-python@v5
+        if: env.READY == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-watch.txt
+
+      - name: Install
+        if: env.READY == 'true'
+        run: pip install -q -r requirements-watch.txt
+
+      - name: Load the saved state
+        if: env.READY == 'true'
+        run: |
+          if git fetch -q --depth=1 origin watch-state:watch-state 2>/dev/null; then
+            git worktree add -q state watch-state
+          else
+            git worktree add -q --orphan -b watch-state state
+          fi
+
+      - name: Check the weather
+        if: env.READY == 'true'
+        run: python scripts/watch.py --state state ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Save the state
+        if: always() && env.READY == 'true'
+        working-directory: state
+        run: |
+          git add -A
+          git diff --cached --quiet && exit 0
+          if git rev-parse -q --verify HEAD >/dev/null; then amend=--amend; else amend=; fi
+          git -c user.name="weather-watch" -c user.email="weather-watch@users.noreply.github.com" \
+            commit -q $amend -m "Watch state $(date -u +%FT%H:%MZ)"
+          git push -q -f origin watch-state
