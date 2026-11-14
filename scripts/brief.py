@@ -115,6 +115,7 @@ def build(out, sample=False, cfg_path=None):
     if not sample:
         data["alerts"] = fetch.fetch_ec_alerts(cfg, log, now_utc)
         data["ec_marine"] = fetch.fetch_ec_marine(cfg, log)
+        data["alerts"] += fetch.marine_warning_alerts(data["ec_marine"], data["alerts"])
         for code in sorted({s["ec_city"] for s in cfg["services"] if s.get("ec_city")}):
             data["ec_city"][code] = fetch.fetch_ec_city(cfg, code, log)
         for key, url in cfg["sources"]["synoptic_charts"].items():

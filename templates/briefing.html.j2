@@ -67,7 +67,7 @@
   {% for a in d.alerts %}
     <li><strong>{{ a.event|title }}</strong> — {{ a.areas|join('; ') }}.
       {% if a.expires %}<span class="muted">Expires {{ fmt_dt(a.expires) }}.</span>{% endif %}
-      <span class="muted">Affects: {{ a.services|map('upper')|join(', ') }}</span></li>
+      {% if a.services %}<span class="muted">Affects: {{ a.services|map('upper')|join(', ') }}</span>{% endif %}</li>
   {% endfor %}
   </ul>
 </section>
