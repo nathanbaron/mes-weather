@@ -257,10 +257,14 @@ def fetch_obs(cfg, now, log):
     for st in o["stations"]:
         try:
             r = requests.get(o["api"], headers=sources.UA, timeout=30, params={
-                "f": "json", "msc_id-value": st["msc_id"], "limit": 1, "sortby": "-date_tm-value",
+                "f": "json", "msc_id-value": st["msc_id"], "limit": 10, "sortby": "-date_tm-value",
                 "properties": "date_tm-value,avg_wnd_spd_10m_pst10mts,avg_wnd_dir_10m_pst10mts,max_wnd_spd_10m_pst10mts"})
             r.raise_for_status()
-            p = r.json()["features"][0]["properties"]
+            # Stations report every minute and now and then leave the direction out of one;
+            # take the newest of the last ten reports that has both speed and direction.
+            rows = [f["properties"] for f in r.json()["features"]]
+            p = next((x for x in rows if x.get("avg_wnd_spd_10m_pst10mts") is not None
+                      and x.get("avg_wnd_dir_10m_pst10mts") is not None), rows[0])
             t = _parse(p["date_tm-value"].replace("Z", "+00:00"))
             spd, d, mx = p.get("avg_wnd_spd_10m_pst10mts"), p.get("avg_wnd_dir_10m_pst10mts"), p.get("max_wnd_spd_10m_pst10mts")
             age = (now - t).total_seconds() / 60
